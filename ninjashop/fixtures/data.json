@@ -1,0 +1,25 @@
+[
+    {"model": "auth.user", "pk": 1, "fields": {"password": "pbkdf2_sha256$870000$nUfoEwgke6p5zCiUFE4bDP$aX9ejOuXeIh9j+FyUvW7QrSfNlUFrhf88esNdr2eQeo=", "last_login": "2025-05-04T08:02:37.729Z", "is_superuser": true, "username": "admin", "first_name": "", "last_name": "", "email": "admin@mail.ru", "is_staff": true, "is_active": true, "date_joined": "2025-05-04T07:46:17.899Z", "user_permissions": []}}, 
+    {"model": "auth.user", "pk": 2, "fields": {"password": "pbkdf2_sha256$870000$LlGhIZxWuNTVRckVv8y5Lj$Z5BcvoJKSiEHg3o/2Kwr+4fv/U3DumvaPhQ93B1LFUY=", "last_login": "2025-05-04T07:59:17.557Z", "is_superuser": false, "username": "user1", "first_name": "Алена", "last_name": "Григорьева", "email": "", "is_staff": false, "is_active": true, "date_joined": "2025-05-04T07:55:51Z", "user_permissions": []}}, 
+    {"model": "auth.user", "pk": 3, "fields": {"password": "pbkdf2_sha256$870000$uhoO4PC7KuRZHlQcvY0d5Q$VMMKHe6ooMsNPfsodSH1Gq1Kka8AgcT4Gvq2xitNOw4=", "last_login": "2025-05-04T08:01:02.199Z", "is_superuser": false, "username": "user2", "first_name": "Мария", "last_name": "Цирельникова", "email": "", "is_staff": false, "is_active": true, "date_joined": "2025-05-04T07:57:52Z", "user_permissions": []}},
+
+    {"model": "ninjashop.category", "pk": 1, "fields": {"name": "Телевизоры", "slug": "televizory"}}, 
+    {"model": "ninjashop.category", "pk": 2, "fields": {"name": "Телефоны", "slug": "telefony"}}, 
+
+    {"model": "ninjashop.product", "pk": 1, "fields": {"category": 2, "name": "Samsung A51", "slug": "samsung-a51", "price": "30000.00", "description": "", "image": "images/bg.png"}}, 
+    {"model": "ninjashop.product", "pk": 2, "fields": {"category": 2, "name": "Samsung A71", "slug": "samsung-a71", "price": "35000.00", "description": "", "image": "images/bg_SWWYhe6.png"}}, 
+    {"model": "ninjashop.product", "pk": 3, "fields": {"category": 1, "name": "Samsung TV10", "slug": "samsung-tv10", "price": "150000.00", "description": "", "image": "images/bg_JyqLRho.png"}}, 
+
+    {"model": "ninjashop.wishlist", "pk": 1, "fields": {"user": 3, "product": 1, "quantity": 3}}, 
+    {"model": "ninjashop.wishlist", "pk": 2, "fields": {"user": 3, "product": 3, "quantity": 1}}, 
+    {"model": "ninjashop.wishlist", "pk": 3, "fields": {"user": 3, "product": 2, "quantity": 1}}, 
+
+    {"model": "ninjashop.status", "pk": 1, "fields": {"name": "Создан"}}, 
+    {"model": "ninjashop.status", "pk": 2, "fields": {"name": "В процессе"}}, 
+    {"model": "ninjashop.status", "pk": 3, "fields": {"name": "Оплачен"}}, 
+    {"model": "ninjashop.status", "pk": 4, "fields": {"name": "Доставлен"}}, 
+
+    {"model": "ninjashop.order", "pk": 1, "fields": {"user": 3, "status": 2, "total": "240000.00", "created_at": "2025-05-04T08:16:34.659Z"}}, 
+    {"model": "ninjashop.orderitem", "pk": 1, "fields": {"order": 1, "product": 1, "cost": "90000.00", "quantity": 3}}, 
+    {"model": "ninjashop.orderitem", "pk": 2, "fields": {"order": 1, "product": 3, "cost": "150000.00", "quantity": 1}}
+]
