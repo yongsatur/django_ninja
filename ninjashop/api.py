@@ -166,7 +166,7 @@ def delete_category(request, category_slug: str):
 
 
 @api.delete('/products/{product_id}', summary = 'Удалить товар')
-def delete_product(request, product_id: str):
+def delete_product(request, product_id: int):
     product = get_object_or_404(Product, id = product_id)
     product.delete()
     return { 'Успешно!': 'Товар был удален!' }
