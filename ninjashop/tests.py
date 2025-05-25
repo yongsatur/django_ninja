@@ -204,8 +204,13 @@ class LoginTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertDictEqual(response.json(), { 'Успешно!': 'Пользователь авторизован!', 'Логин пользователя': 'admin' })
 
+    def test_logout(self):
+        response = self.client.post('/api/login', content_type = 'application/json', data = self.payload)
+        response = self.client.post('/api/logout')
+        self.assertEqual(response.status_code, 200)
+        self.assertDictEqual(response.json(), {'Успешно!': 'Вы вышли из аккаунта!'})
+
     def test_get_users(self):
-        self.client.post('/api/login', content_type = 'application/json', data = {'username': 'admin', 'password': 'admin'})
         self.client.post('/api/login', content_type = 'application/json', data = self.payload)
         response = self.client.get('/api/users')
         self.assertEqual(response.status_code, 200)

@@ -14,11 +14,25 @@ from django.contrib.auth.decorators import permission_required
 from django.http import HttpResponse
 
 
-api = NinjaAPI(csrf = True)
+class BasicAuth(HttpBasicAuth):
+    def authenticate(self, request, username, password):
+        user = authenticate(username = username, password = password)
+        if user:
+            return user
+        raise AuthenticationError('Ошибка авторизации!')
+
+
+api = NinjaAPI(csrf = True, auth = BasicAuth())
+
 
 @api.exception_handler(PermissionDenied)
 def permission_error(request, e):
     return HttpResponse('У вас недостаточно прав для совершения данной операции!', status = 403)
+    
+
+@api.get('/basic', auth = BasicAuth(), summary = 'Авторизация')
+def authentication(request):
+    return { 'Сообщение': 'Пользователь авторизован!', 'Логин пользователя': request.auth.username }
 
 
 class CategoryIn(Schema):
@@ -47,6 +61,11 @@ class ProductOut(Schema):
     category: CategoryOut
     description: str
     price: float
+
+
+class UserAuth(Schema):
+    username: str
+    password: str
 
 
 class UserRegistration(Schema):
@@ -178,19 +197,6 @@ def delete_product(request, product_id: int):
     product = get_object_or_404(Product, id = product_id)
     product.delete()
     return { 'Успешно!': 'Товар был удален!' }
-
-
-class BasicAuth(HttpBasicAuth):
-    def authenticate(self, request, username, password):
-        user = authenticate(username = username, password = password)
-        if user:
-            return user
-        raise AuthenticationError('Ошибка авторизации!')
-    
-
-@api.get('/basic', auth = BasicAuth(), summary = 'Авторизация пользователя')
-def authentication(request):
-    return { 'Сообщение': 'Пользователь авторизован!', 'Логин пользователя': request.auth.username }
 
 
 @api.post('/registration', summary = 'Регистрация пользователя')
