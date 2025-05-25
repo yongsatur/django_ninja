@@ -4,13 +4,21 @@ from .models import Category, Product, Wishlist, Order, OrderItem, Status
 from ninja import UploadedFile, File
 from django.shortcuts import get_object_or_404
 from typing import List
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate
+from ninja.security import HttpBasicAuth
 from ninja.errors import HttpError, AuthenticationError
 from django.contrib.auth.models import User
 from ninja import Query
+from django.core.exceptions import PermissionDenied
+from django.contrib.auth.decorators import permission_required
+from django.http import HttpResponse
 
 
 api = NinjaAPI(csrf = True)
+
+@api.exception_handler(PermissionDenied)
+def permission_error(request, e):
+    return HttpResponse('У вас недостаточно прав для совершения данной операции!', status = 403)
 
 
 class CategoryIn(Schema):
@@ -38,12 +46,7 @@ class ProductOut(Schema):
     slug: str
     category: CategoryOut
     description: str
-    price: float 
-
-
-class UserAuthentication(Schema):
-    username: str
-    password: str
+    price: float
 
 
 class UserRegistration(Schema):
@@ -131,12 +134,14 @@ def get_products_of_category(request, category_slug: str):
 
 
 @api.post('/categories', response = CategoryOut, summary = 'Добавить категорию')
+@permission_required('auth.add_Категория', raise_exception = True)
 def create_category(request, payload: CategoryIn):
     category = Category.objects.create(**payload.dict())
     return category
 
 
 @api.post('/products', response = ProductOut, summary = 'Добавить товар')
+@permission_required('auth.add_Товар', raise_exception = True)
 def create_product(request, payload: ProductIn, image: UploadedFile = File(...)):
     payload_dict = payload.dict()
     category = get_object_or_404(Category, slug = payload_dict.pop('category'))
@@ -146,6 +151,7 @@ def create_product(request, payload: ProductIn, image: UploadedFile = File(...))
 
 
 @api.put('/products/{product_id}', response = ProductOut, summary = 'Изменить информацию о товаре')
+@permission_required('auth.change_Товар', raise_exception = True)
 def update_product(request, product_id: int, payload: ProductIn):
     product = get_object_or_404(Product, id = product_id)
     for attribute, value in payload.dict().items():
@@ -159,6 +165,7 @@ def update_product(request, product_id: int, payload: ProductIn):
 
 
 @api.delete('/categories/{category_slug}', summary = 'Удалить категорию')
+@permission_required('auth.delete_Категория', raise_exception = True)
 def delete_category(request, category_slug: str):
     category = get_object_or_404(Category, slug = category_slug)
     category.delete()
@@ -166,59 +173,44 @@ def delete_category(request, category_slug: str):
 
 
 @api.delete('/products/{product_id}', summary = 'Удалить товар')
+@permission_required('auth.delete_Товар', raise_exception = True)
 def delete_product(request, product_id: int):
     product = get_object_or_404(Product, id = product_id)
     product.delete()
     return { 'Успешно!': 'Товар был удален!' }
 
 
-@api.get('/account', summary = 'Проверка авторизации пользователя')
-def account(request):
-    if not request.user.is_authenticated:
-        raise HttpError(401, 'Пользователь не авторизован!')
-    return { 'Авторизованный пользователь': request.user.username }
+class BasicAuth(HttpBasicAuth):
+    def authenticate(self, request, username, password):
+        user = authenticate(username = username, password = password)
+        if user:
+            return user
+        raise AuthenticationError('Ошибка авторизации!')
+    
 
-
-@api.post('/login', summary = 'Авторизация пользователя')
-def login_user(request, payload: UserAuthentication):
-    user = authenticate(username = payload.username, password = payload.password)
-    if user is not None:
-        login(request, user)
-        return { 'Успешно!': 'Пользователь авторизован!', 'Логин пользователя': user.username }
-    raise AuthenticationError('Ошибка авторизации!')
+@api.get('/basic', auth = BasicAuth(), summary = 'Авторизация пользователя')
+def authentication(request):
+    return { 'Сообщение': 'Пользователь авторизован!', 'Логин пользователя': request.auth.username }
 
 
 @api.post('/registration', summary = 'Регистрация пользователя')
 def registration_user(request, payload: UserRegistration):
     if User.objects.filter(username = payload.username).exists():
         raise HttpError(400, 'Пользователь с таким именем уже существует!')
-    
     user = User.objects.create_user(
         username = payload.username,
         last_name = payload.last_name,
         first_name = payload.first_name,
         email = payload.email,
         password = payload.password1
-    )
-    login(request, user)
-    
+    )    
     return { 'Успешно!': 'Пользователь зарегистрирован!', 'Логин пользователя': user.username }
 
 
-@api.post('/logout', auth = None, summary = 'Выйти из аккаунта')
-def logout_user(request):
-    logout(request)
-    return {'Успешно!': 'Вы вышли из аккаунта!'}
-
-
 @api.get('/users', response = List[UserOut], summary = 'Просмотр информации о пользователях')
-def users(request):
-    account(request)
-    
-    if request.user.has_perm('auth.view_user'):
-        return User.objects.all()
-    else:
-        raise HttpError(403, 'У вас недостаточно прав для просмотра информации!')
+@permission_required('auth.view_user', raise_exception = True)
+def users(request):    
+    return User.objects.all()
     
 
 @api.get('/products_sort', response = List[ProductOut], summary = 'Сортировка товаров по цене')
@@ -285,7 +277,8 @@ def remove_from_wishlist(request, wishlist_id: int):
     return wishlist
 
 
-@api.get('/orders', response = List[OrderItemOut], summary = 'Получить список заказов')
+@api.get('/orders', response = List[OrderItemOut], summary = 'Получить список всех заказов')
+@permission_required('auth.view_Позиция_заказа', raise_exception = True)
 def list_orders(request):
     return OrderItem.objects.all()
 
@@ -325,6 +318,7 @@ def create_order(request, wishlists: List[int]):
 
 
 @api.put('/change_status', response = OrderOut, summary = 'Изменить статус заказа')
+@permission_required('auth.change_Заказ', raise_exception = True)
 def change_status(request, order_id: int, status_id: int):
     order = get_object_or_404(Order, id = order_id)
     status = get_object_or_404(Status, id = status_id)
