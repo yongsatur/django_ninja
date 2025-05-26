@@ -12,6 +12,7 @@ from ninja import Query
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import permission_required
 from django.http import HttpResponse
+from .decorator import *
 
 
 class BasicAuth(HttpBasicAuth):
@@ -23,11 +24,6 @@ class BasicAuth(HttpBasicAuth):
 
 
 api = NinjaAPI(csrf = True, auth = BasicAuth())
-
-
-@api.exception_handler(PermissionDenied)
-def permission_error(request, e):
-    return HttpResponse('У вас недостаточно прав для совершения данной операции!', status = 403)
     
 
 @api.get('/basic', auth = BasicAuth(), summary = 'Авторизация')
@@ -153,14 +149,14 @@ def get_products_of_category(request, category_slug: str):
 
 
 @api.post('/categories', response = CategoryOut, summary = 'Добавить категорию')
-@permission_required('auth.add_Категория', raise_exception = True)
+@check_permission('ninjashop.add_category', raise_exception = True, use_auth = True)
 def create_category(request, payload: CategoryIn):
     category = Category.objects.create(**payload.dict())
     return category
 
 
 @api.post('/products', response = ProductOut, summary = 'Добавить товар')
-@permission_required('auth.add_Товар', raise_exception = True)
+@check_permission('ninjashop.add_product', raise_exception = True, use_auth = True)
 def create_product(request, payload: ProductIn, image: UploadedFile = File(...)):
     payload_dict = payload.dict()
     category = get_object_or_404(Category, slug = payload_dict.pop('category'))
@@ -170,7 +166,7 @@ def create_product(request, payload: ProductIn, image: UploadedFile = File(...))
 
 
 @api.put('/products/{product_id}', response = ProductOut, summary = 'Изменить информацию о товаре')
-@permission_required('auth.change_Товар', raise_exception = True)
+@check_permission('ninjashop.change_product', raise_exception = True, use_auth = True)
 def update_product(request, product_id: int, payload: ProductIn):
     product = get_object_or_404(Product, id = product_id)
     for attribute, value in payload.dict().items():
@@ -184,7 +180,7 @@ def update_product(request, product_id: int, payload: ProductIn):
 
 
 @api.delete('/categories/{category_slug}', summary = 'Удалить категорию')
-@permission_required('auth.delete_Категория', raise_exception = True)
+@check_permission('ninjashop.delete_category', raise_exception = True, use_auth = True)
 def delete_category(request, category_slug: str):
     category = get_object_or_404(Category, slug = category_slug)
     category.delete()
@@ -192,7 +188,7 @@ def delete_category(request, category_slug: str):
 
 
 @api.delete('/products/{product_id}', summary = 'Удалить товар')
-@permission_required('auth.delete_Товар', raise_exception = True)
+@check_permission('ninjashop.delete_product', raise_exception = True, use_auth = True)
 def delete_product(request, product_id: int):
     product = get_object_or_404(Product, id = product_id)
     product.delete()
@@ -214,7 +210,7 @@ def registration_user(request, payload: UserRegistration):
 
 
 @api.get('/users', response = List[UserOut], summary = 'Просмотр информации о пользователях')
-@permission_required('auth.view_user', raise_exception = True)
+@check_permission('auth.view_user', raise_exception = True, use_auth = True)
 def users(request):    
     return User.objects.all()
     
@@ -284,7 +280,7 @@ def remove_from_wishlist(request, wishlist_id: int):
 
 
 @api.get('/orders', response = List[OrderItemOut], summary = 'Получить список всех заказов')
-@permission_required('auth.view_Позиция_заказа', raise_exception = True)
+@check_permission('ninjashop.view_orderitem', raise_exception = True, use_auth = True)
 def list_orders(request):
     return OrderItem.objects.all()
 
@@ -324,7 +320,7 @@ def create_order(request, wishlists: List[int]):
 
 
 @api.put('/change_status', response = OrderOut, summary = 'Изменить статус заказа')
-@permission_required('auth.change_Заказ', raise_exception = True)
+@check_permission('ninjashop.change_order', raise_exception = True, use_auth = True)
 def change_status(request, order_id: int, status_id: int):
     order = get_object_or_404(Order, id = order_id)
     status = get_object_or_404(Status, id = status_id)
